@@ -1,0 +1,11 @@
+#+TITLE: words are correct
+#+STARTUP: showeverything
+This test checks to see how my/flyspell-auto-correct-word works on correct words.  The test will attempt to use my/flyspell-auto-correct-word function after every word in the heading under "before".  After, it should look like the section "after".
+
+Also my/flyspell-auto-correct-word changes "before " into "before ", but it changes "wonderful $" into "wonderful  $" with point on the space before end of line.  I'm not sure why it does this, but I assume that it is a flyspell thing.
+
+Also it might be ok to use whitespace mode, to see what is happening here.
+* before
+** beautiful amazing spectacular spirited wonderful 
+* after
+** beautiful  amazing  spectacular  spirited  wonderful  
