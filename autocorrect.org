@@ -13,14 +13,7 @@ symbols in the middle of it or numbers, should not be corrected.")
 I also do some regexp testing on this function [[file:regression-testing.org::*Testing%20my%20regexp][here.]]
 ** tweaking post-self-insert-hook
 
-#+BEGIN_SRC emacs-lisp
-(defun autocorrect/word-is-correctable ()
-"This function makes sure that we are not calling ispell on words that are not meant to be corrected.  Like 'variable2'."
-(interactive))
-#+END_SRC
-
-Modify post-self-insert-hook to run "flyspell-auto-correct-word", if the character is SPC
-
+This just returns the word before point or the word that point is on.
 #+BEGIN_SRC emacs-lisp
   (defun reg-test/previous-word ()
     "Returns the previous word in the buffer."
@@ -34,10 +27,8 @@ Modify post-self-insert-hook to run "flyspell-auto-correct-word", if the charact
       reg-test/previous-word))
 #+END_SRC
 
-#+BEGIN_SRC emacs-lisp
 
-#+END_SRC
-
+This is where the magic happens!  This function checks to see if the last entered key was the space key.  If it was, then it checks to see if the last word is made up of letters and possible ends with punctuation.  If it does, then it runs ~(flyspell-auto-correct-word)~.
 #+BEGIN_SRC emacs-lisp
   (defun my/flyspell-auto-correct-word ()
     "If the last entered character is SPC, then run flyspell-auto-correct-word on the last word "
@@ -66,23 +57,33 @@ Modify post-self-insert-hook to run "flyspell-auto-correct-word", if the charact
 For the moment my auto correct word is not working. I am going to fix it soon.
 
 #+BEGIN_SRC emacs-lisp
-(defun add-my-flyspell-auto-correct-word-hook ()
-  "This function adds my/flyspell-auto-correct-word function to be run after post-self-insert-hook."
-  (interactive)
-  (add-hook 'post-self-insert-hook 'my/flyspell-auto-correct-word))
+    (defun add-autocorrect-hook ()
+      "This function adds my/flyspell-auto-correct-word function to be run after post-self-insert-hook."
+      (interactive)
+      (add-hook 'post-self-insert-hook 'my/flyspell-auto-correct-word))
 
-(defun remove-my-flyspell-auto-correct-word-hook ()
-  "This function adds my/flyspell-auto-correct-word function to be run after post-self-insert-hook."
-  (interactive)
-  (remove-hook 'post-self-insert-hook 'my/flyspell-auto-correct-word))
+    (defun remove-autocorrect-hook ()
+      "This function adds my/flyspell-auto-correct-word function to be run after post-self-insert-hook."
+      (interactive)
+      (remove-hook 'post-self-insert-hook 'my/flyspell-auto-correct-word))
+
 #+END_SRC
 
+
+When I open a helm buffer, I DO NOT want auto-matic spell checking on.
+#+BEGIN_SRC emacs-lisp
+    (add-hook 'minibuffer-inactive-mode-hook 'remove-autocorrect-hook)
+#+END_SRC
+
+When I open a text-mode, then I'd like to have autocorrect on.  When I open a programming mode, I do not want autocorrect on.
+#+BEGIN_SRC emacs-lisp
+  (add-hook 'text-mode-hook #'add-autocorrect-hook)
+  (add-hook 'programming-mode-hook #'remove-autocorrect-hook)
+#+END_SRC
 
 Turn on autocorrect last word for all of my text modes.
 It might be a bad idea to turn it on for programming modes.  If you have a variable named "becuase", it'll keep correcting it.
 
-(add-hook 'text-mode-hook #'add-my-flyspell-auto-correct-word-hook)
-(add-hook 'programming-mode-hook #'remove-my-flyspell-auto-correct-word-hook)
 
 #+BEGIN_SRC emacs-lisp
 (provide 'init-autocorrect)
