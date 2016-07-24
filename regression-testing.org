@@ -1,6 +1,56 @@
+#+TITLE: Regression Testing
+#+AUTHOR: Joshua Branson
+
 This is the bulk of the stuff that makes regression testing possible.  I have several functions that tests my test files.  First I correct any mistakes on the "before" line.  Then if that section matches the after line, we're good.
 
-I might be able to alter this program with ~(find-file-no-select FILE)~ and ~(with-current-buffer BUFFER BODY)~.  The returns the buffer from FILE, and the second 
+I might be able to alter this program with ~(find-file-no-select FILE)~ and ~(with-current-buffer BUFFER BODY)~.  The returns the buffer from FILE, and the second
+
+* Testing my regexp
+Before I run flyspell autcorrect word, I want to make sure that the word is a correctable word and is not something like a variable name.
+
+|---------------------------+------------------------------------|
+| Strings that should match | strings that shouldn't/won't match |
+|---------------------------+------------------------------------|
+| pig                       | ""  the null string                |
+| pig,                      | hello;;;                           |
+| pig.                      | 31hello23                          |
+| pig."                     | hello23                            |
+| pig?                      | 23hello                            |
+| pig!                      | hell$o                             |
+| pig!?                     | hello%                             |
+| pig?!                     | he#llo                             |
+| pig;                      | h@ello                             |
+| pig)                      | hel!lo                             |
+| pig.)                     | he?llo                             |
+| pig...                    |                                    |
+|---------------------------+------------------------------------|
+
+
+#+BEGIN_SRC emacs-lisp
+  (ert-deftest autocorrect-testing-my-regexp ()
+    (should (string-match autocorrect-regexp "the" ))
+    (should (string-match autocorrect-regexp "the." ))
+    (should (string-match autocorrect-regexp "the?" ))
+    (should (string-match autocorrect-regexp "the," ))
+    (should (string-match autocorrect-regexp "the;" ))
+    (should (string-match autocorrect-regexp "the!" ))
+    (should (string-match autocorrect-regexp "the..." ))
+    (should (string-match autocorrect-regexp "the\"" ))
+    (should (string-match autocorrect-regexp "the" ))
+    (should-not (string-match autocorrect-regexp "the21" ))
+    (should-not (string-match autocorrect-regexp "21the" ))
+    (should-not (string-match autocorrect-regexp "t.he" ))
+    (should-not (string-match autocorrect-regexp "t?he" ))
+    (should-not (string-match autocorrect-regexp "t?h@e" ))
+    (should-not (string-match autocorrect-regexp "th$e" ))
+    (should-not (string-match autocorrect-regexp "theh#e" ))
+    (should-not (string-match autocorrect-regexp "theh#e" ))
+    (should-not (string-match autocorrect-regexp "th%ehe" ))
+    (should-not (string-match autocorrect-regexp "t^hehe" ))
+    (should-not (string-match autocorrect-regexp "the&he" ))
+    (should-not (string-match autocorrect-regexp "t*hehe" )))
+
+#+END_SRC
 
 * Functions for "before" and "after" sections.
 ** Go to the before and after sections.
@@ -18,7 +68,6 @@ I might be able to alter this program with ~(find-file-no-select FILE)~ and ~(wi
       (let (reg-test/point)
         (setq reg-test/point
               (point))
-        (kill-buffer reg-test/buffer)
         reg-test/point)))
 
   (defun reg-test/go-to-after (reg-test/buffer)
@@ -31,9 +80,12 @@ I might be able to alter this program with ~(find-file-no-select FILE)~ and ~(wi
       (next-line)
       (beginning-of-line)
       (forward-char 3)
-      (point)))
+      (let (reg-test/point)
+        (setq reg-test/point (point))
+        reg-test/point)))
 
 #+END_SRC
+
 
 This should take point to the "before" heading.
 (reg-test/go-to-before "words-are-correct.org")
@@ -45,18 +97,31 @@ This should take point to the "after" heading.
 #+BEGIN_SRC emacs-lisp
   (defun reg-test/get-before-line-number (reg-test/buffer)
     "This returns the line number at the before heading."
-    (reg-test/go-to-before reg-test/buffer)
-    (line-number-at-pos))
+    (find-file-noselect (concat "~/programming/emacs/autocorrect/tests/" reg-test/buffer))
+    (let (reg-test/line-number)
+      (with-current-buffer reg-test/buffer
+        (goto-char (reg-test/go-to-before reg-test/buffer))
+        (setq reg-test/line-number
+              (line-number-at-pos)))
+      reg-test/line-number)
+    )
 
   (defun reg-test/get-after-line-number (reg-test/buffer)
     "This returns the line number at the before heading."
-    (reg-test/go-to-after reg-test/buffer)
-    (line-number-at-pos))
+    (find-file-noselect (concat "~/programming/emacs/autocorrect/tests/" reg-test/buffer))
+    (let (reg-test/line-number)
+      (with-current-buffer reg-test/buffer
+        (goto-char (reg-test/go-to-after reg-test/buffer))
+        (setq reg-test/line-number
+              (line-number-at-pos)))
+      reg-test/line-number))
 #+END_SRC
 
 This should get the before line number.
 
 (reg-test/get-before-line-number "words-are-correct.org")
+
+(reg-test/get-after-line-number "words-are-correct.org")
 ** return the before and after text.
 
 #+BEGIN_SRC emacs-lisp
@@ -66,30 +131,22 @@ This should get the before line number.
     "This returns the before text."
     (interactive)
     ;;(reg-test/go-to-before reg-test/buffer)
-
     (find-file-noselect (concat "~/programming/emacs/autocorrect/tests/" reg-test/buffer))
     (with-current-buffer reg-test/buffer
-      (beginning-of-buffer)
-      (search-forward "* before")
-      (next-line)
-      (beginning-of-line)
-      (forward-char 3)
-      (let (string-before)
-        (setq string-before (buffer-substring (point) (progn
-                                                        (search-forward-regexp "$")
-                                                        (point))))
-        string-before)))
+      (goto-char (reg-test/go-to-before reg-test/buffer))
+      (buffer-substring (point) (progn
+                                  (search-forward-regexp "$")
+                                  (point)))))
 
   (defun reg-test/get-after (reg-test/buffer)
     "This returns the before text."
     (interactive)
-    (reg-test/go-to-after reg-test/buffer)
-    (let (string-after)
-      (setq string-after
-            (buffer-substring (point) (progn
-                                        (search-forward-regexp "$")
-                                        (point))))
-      string-after))
+    (find-file-noselect (concat "~/programming/emacs/autocorrect/tests/" reg-test/buffer))
+    (with-current-buffer reg-test/buffer
+      (goto-char (reg-test/go-to-after reg-test/buffer))
+      (buffer-substring (point) (progn
+                                  (search-forward-regexp "$")
+                                  (point)))))
 
 #+END_SRC
 
@@ -98,16 +155,6 @@ This should get me the before string.
 
 This should get me the after string.
 (reg-test/get-after "words-are-correct.org")
-
-* COMMENT Does the buffer already exist
-#+BEGIN_SRC emacs-lisp
-  (defun reg-test/does-buffer-exist-p (reg-test/buffer)
-  "Returns t if the buffer already exists"
-  (interactive)
-  )
-
-
-#+END_SRC
 
 * Correct words on current line
 
@@ -133,11 +180,12 @@ This should get me the after string.
     (defun reg-test/autocorrect-words-are-correct (reg-test/buffer)
       "This function runs the test specifies in ./tests/words-are-correct.org"
       (interactive)
-      (reg-test/correct-all-words-on-current-line
-            (reg-test/get-before-line-number reg-test/buffer)
-            reg-test/buffer))
-
-
+      (find-file-noselect (concat "~/programming/emacs/autocorrect/tests/" reg-test/buffer))
+      (with-current-buffer reg-test/buffer
+        (goto-char (reg-test/go-to-before reg-test/buffer))
+        (reg-test/correct-all-words-on-current-line
+         (reg-test/get-before-line-number reg-test/buffer)
+         reg-test/buffer)))
        #+END_SRC
        This should run the run corrections on all words in the before line.
 
@@ -153,27 +201,19 @@ This should get me the after string.
                        (setq stringEqual
                              (string= (reg-test/get-before reg-test/buffer) (reg-test/get-after reg-test/buffer)))
                        (kill-buffer reg-test/buffer)
-                       stringEqual)))
-           )
-
-
-         (defun thisShouldReturnT ()
-           ""
-           (interactive)
-           (let (reg-test/buffer)
-             (setq reg-test/buffer "words-are-correct.org")
-             (reg-test/autocorrect-words-are-correct reg-test/buffer)
-             (let (stringEqual)
-               (setq stringEqual
-                     (string= (reg-test/get-before reg-test/buffer) (reg-test/get-after reg-test/buffer)))
-               (kill-buffer reg-test/buffer)
-               stringEqual))) 
-
-               (thisShouldReturnT)
-
-
+                       stringEqual))))
 #+END_SRC
+* looking for bugs
 
-             (reg-test/autocorrect-words-are-correct "words-are-correct.org")
-               (setq stringEqual
-                     (string= (reg-test/get-before "words-are-correct.org") (reg-test/get-after "words-are-correct.org")))
+(defun add-my-flyspell-auto-correct-word-hook ()
+  "This function adds my/flyspell-auto-correct-word function to be run after post-self-insert-hook."
+  (interactive)
+  (add-hook 'post-self-insert-hook 'my/flyspell-auto-correct-word))
+
+(defun remove-my-flyspell-auto-correct-word-hook ()
+  "This function adds my/flyspell-auto-correct-word function to be run after post-self-insert-hook."
+  (interactive)
+  (remove-hook 'post-self-insert-hook 'my/flyspell-auto-correct-word))
+
+
+  So today I had a rather interesting day!  I worked a lot with Katie.  And I was able to have oodles of fun with working at uni place.  I think that my auto-correct package might just be working!  How cool is that?  eh?  incorrect interested interesting

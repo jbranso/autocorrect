@@ -1,0 +1,36 @@
+* before
+** these words migth be corrcet or they might not be
+* after
+** these words might be correct or they might not be
+
+
+
+
+(defun remove-my-flyspell-auto-correct-word-hook ()
+  "This function adds my/flyspell-auto-correct-word function to be run after post-self-insert-hook."
+  (interactive)
+  (remove-hook 'post-self-insert-hook 'my/flyspell-auto-correct-word))
+
+* flyspell is adding an extra space when a word is incorrect.
+
+For example:
+
+incorrect
+
+incorrect  incorrect
+
+* trouble correcting words at the end of the file
+When I try to correct a word at the end of the file, I see an "args out of range: #<buffer some-words-are-incorret.org>, 886, 887.
+
+incorrect  incorrect
+
+* correcting a word at the end of the line jumps me to the next line.
+
+correcting
+
+Let's try out this autocorrect functionality eh? how about?    nnn
+
+hello32
+
+* flyspell shouldn't correct words with numbers in them.
+** hello32
