@@ -2,27 +2,44 @@
              :config (abbrev-mode 1))
 
 * My autocorrect word package
-** my regexp for testing words
+My regexp for testing words
 #+BEGIN_SRC emacs-lisp
   (defvar autocorrect-regexp "^[a-zA-Z]+[;.,?!)\"]\\{0,3\\}$"
   "autocorrect-regexp is the regexp that makes sure the word is a word that we want to try to correct.
 For example, my package should not try to correct a variable name.  So any word with any special
-symbols in the middle of it or numbers, should not be corrected.")
+symbols in the middle of it or numbers, should not be corrected.  Here are some examples of words that will be corrected:
+
+hello
+pig,
+dog;
+cat?
+hello...
+why!?
+
+Here are some words that will not be corrected:
+
+h3ll0
+w4y?
+part-time
+else$where!?
+")
 #+END_SRC
 
-I also do some regexp testing on this function [[file:regression-testing.org::*Testing%20my%20regexp][here.]]
+I also do regression testing on the autocorrect-regexp [[file:regression-testing.org::*Testing%20my%20regexp][here.]]
 ** is the word correctable
+
+This checks to see if the word is essentially made up only of letters, but maybe ends in punctuation.  OR, if the major mode is org mode, it will not check the word if point is in an org babel code block.
+
 #+BEGIN_SRC emacs-lisp
   (defun autocorrect-is-word-correctable (string)
     (if (string= major-mode "org-mode")
         (and
-         (string-match autocorrect-regexp previousWord)
+         (string-match autocorrect-regexp string)
          (not (string= "src-block"
                        (car (org-element-at-point)))))
-      (string-match autocorrect-regexp previousWord)))
+      (string-match autocorrect-regexp string)))
 #+END_SRC
-** tweaking post-self-insert-hook
-
+** Getting the previous word
 This just returns the word before point or the word that point is on.
 #+BEGIN_SRC emacs-lisp
   (defun reg-test/previous-word ()
@@ -37,69 +54,33 @@ This just returns the word before point or the word that point is on.
       reg-test/previous-word))
 #+END_SRC
 
+** tweaking post-self-insert-hook
 
-This is where the magic happens!  This function checks to see if the last entered key was the space key.  If it was, then it checks to see if the last word is made up of letters and possible ends with punctuation.  If it does, then it runs ~(flyspell-auto-correct-word)~.
+This is where the magic happens!  This function checks to see if the last entered key was the space key.  If it was, then it checks to see if the last word is made up of letters and possibly ends with punctuation.  If it does, then it runs ~(flyspell-auto-correct-word)~.
 #+BEGIN_SRC emacs-lisp
-  (defun my/flyspell-auto-correct-word ()
+  (defun autocorrect-flyspell-autocorrect-word ()
     "If the last entered character is SPC, then run flyspell-auto-correct-word on the last word "
     (interactive)
-    (let (previousWord previousChar nextChar current-point)
+    (let (previous-word previous-char next-char current-point)
       (setq current-point (point))
-      (setq previousWord (reg-test/previous-word))
+      (setq previous-word (reg-test/previous-word))
       ;; get the char before point.  If you have just pressed the space bar, then the char before point is SPC.
       ;; if you have just pressed "h", then the char before point is "h".
-      (setq previousChar
+      (setq previous-char
             (substring (buffer-substring (- (point) 1) (point)) 0))
-      (setq nextChar
+      (setq next-char
             (substring (buffer-substring (point) (+ 1 (point))) 0))
-      (when (and (string= previousChar " ")
+      (when (and (string= previous-char " ")
                  ;; the string should just be alphanumeric characters, or it might have punctuation at the end.  Like "Hello?"
                  ;; (additional details)
                  ;; "I am a sentence," said me.
                  ;; "I don't care what you think," said Sally, "but if you would like, I can punch you in the face."
-       (autocorrect-is-word-correctable reg-test/previous-word))
+                 (autocorrect-is-word-correctable previous-word))
         (progn
           (flyspell-auto-correct-word)))
       (goto-char current-point)))
 #+END_SRC
-** Defining some hooks
-For the moment my auto correct word is not working. I am going to fix it soon.
 
-#+BEGIN_SRC emacs-lisp
-    (defun add-autocorrect-hook ()
-      "This function adds my/flyspell-auto-correct-word function to be run after post-self-insert-hook."
-      (interactive)
-      (add-hook 'post-self-insert-hook 'my/flyspell-auto-correct-word))
-
-
-    (defun remove-autocorrect-hook ()
-      "This function adds my/flyspell-auto-correct-word function to be run after post-self-insert-hook."
-      (interactive)
-      (remove-hook 'post-self-insert-hook 'my/flyspell-auto-correct-word))
-
-#+END_SRC
-
-When I open a helm buffer, I DO NOT want auto-matic spell checking on.
-#+BEGIN_SRC emacs-lisp
-    (add-hook 'minibuffer-inactive-mode-hook 'remove-autocorrect-hook)
-#+END_SRC
-
-When I open a text-mode, then I'd like to have autocorrect on.  When I open a programming mode, I do not want autocorrect on.
-#+BEGIN_SRC emacs-lisp
-  (add-hook 'text-mode-hook #'add-autocorrect-hook)
-  (add-hook 'programming-mode-hook #'remove-autocorrect-hook)
-#+END_SRC
-
-Turn on autocorrect last word for all of my text modes.
-It might be a bad idea to turn it on for programming modes.  If you have a variable named "becuase", it'll keep correcting it.
-
-
-#+BEGIN_SRC emacs-lisp
-(provide 'init-autocorrect)
-#+END_SRC
-
-** Allowing the user to specify how some words should be corrected.
-** Allowing the user to add a word to the dictionary.
 ** Determine if the major mode is programming-mode
 #+BEGIN_SRC emacs-lisp
   (defun autocorrect-mode-is-a-prog-mode ())
@@ -116,15 +97,70 @@ It might be a bad idea to turn it on for programming modes.  If you have a varia
 #+END_SRC
 ** Determine if major mode is a text-mode
 #+BEGIN_SRC emacs-lisp
-  (defun autocorrect-mode-is-a-text-mode ())
-  (let (return-value)
-    (setq return-value
-          (string= "Parent mode: `text-mode"
-                   (substring (describe-function major-mode)
-                              (search "Parent mode:"
-                                      (describe-function major-mode))
-                              119)))
-    (delete-window
-     (get-buffer-window "*Help*"))
-    return-value)
+  (defun autocorrect-mode-is-a-text-mode ()
+    (let (return-value)
+      (setq return-value
+            (string= "Parent mode: `text-mode"
+                     (substring (describe-function major-mode)
+                                (search "Parent mode:"
+                                        (describe-function major-mode))
+                                119)))
+      (delete-window
+       (get-buffer-window "*Help*"))
+      return-value))
 #+END_SRC
+** Defining some hooks
+*** Functions to turn on and turn off autocorrect
+#+BEGIN_SRC emacs-lisp
+    (defun autocorrect-add-autocorrect-hook ()
+      "This function adds autocorrect-flyspell-autocorrect-word function to be run after post-self-insert-hook."
+      (interactive)
+      (add-hook 'post-self-insert-hook 'autocorrect-flyspell-autocorrect-word))
+
+    (defun autocorrect-remove-autocorrect-hook ()
+      "This function adds autocorrect-flyspell-autocorrect-word function to be run after post-self-insert-hook."
+      (interactive)
+      (remove-hook 'post-self-insert-hook 'autocorrect-flyspell-autocorrect-word))
+
+#+END_SRC
+
+*** turn off autocorrect when helm opens up
+When I open a helm buffer, I DO NOT want auto-matic spell checking on.
+#+BEGIN_SRC emacs-lisp
+    (add-hook 'minibuffer-inactive-mode-hook 'autocorrect-remove-autocorrect-hook)
+#+END_SRC
+
+*** Turn on autocorrect for text modes but not programmming modes
+
+When I open a text-mode, then I'd like to have autocorrect on.  When I open a programming mode, I do not want autocorrect on.
+#+BEGIN_SRC emacs-lisp
+  (add-hook 'text-mode-hook #'autocorrect-add-autocorrect-hook)
+  (add-hook 'programming-mode-hook #'autocorrect-remove-autocorrect-hook)
+#+END_SRC
+
+Turn on autocorrect last word for all of my text modes.
+It might be a bad idea to turn it on for programming modes.  If you have a variable named "becuase", it'll keep correcting it.
+*** When major made changes, maybe turn on autocorrect
+
+#+BEGIN_SRC emacs-lisp
+  (defun autocorrect-maybe-turn-on-autocorrect ()
+    "This function checks to see if the current major-mode is text mode or org-mode.  If either is true, then it turns on
+    autocorrecting.  If neither is true, then it turns off autocorrecting."
+    (interactive)
+    (cond
+     ((string= major-mode "org-mode") (autocorrect-add-autocorrect-hook))
+     ((autocorrect-mode-is-a-text-mode) (autocorrect-add-autocorrect-hook))
+     (t (autocorrect-remove-autocorrect-hook))))
+
+  ;;(add-hook 'after-change-major-mode-hook #'autocorrect-maybe-turn-on-autocorrect)
+  ;;(remove-hook 'after-change-major-mode-hook #'autocorrect-maybe-turn-on-autocorrect)
+#+END_SRC
+
+** provide this file
+
+#+BEGIN_SRC emacs-lisp
+  (provide 'init-autocorrect)
+#+END_SRC
+
+** Allowing the user to specify how some words should be corrected.
+** Allowing the user to add a word to the dictionary.
