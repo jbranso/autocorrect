@@ -1,7 +1,22 @@
 (defvar autocorrect-regexp "^[a-zA-Z]+[;.,?!)\"]\\{0,3\\}$"
   "autocorrect-regexp is the regexp that makes sure the word is a word that we want to try to correct.
 For example, my package should not try to correct a variable name.  So any word with any special
-symbols in the middle of it or numbers, should not be corrected.")
+symbols in the middle of it or numbers, should not be corrected.  Here are some examples of words that will be corrected:
+
+hello
+pig,
+dog;
+cat?
+hello...
+why!?
+
+Here are some words that will not be corrected:
+
+h3ll0
+w4y?
+part-time
+else$where!?
+")
 
 (defun autocorrect-is-word-correctable (string)
   (if (string= major-mode "org-mode")
@@ -11,29 +26,27 @@ symbols in the middle of it or numbers, should not be corrected.")
                      (car (org-element-at-point)))))
     (string-match autocorrect-regexp string)))
 
-(defun reg-test/previous-word ()
+(defun autocorrect-previous-word ()
   "Returns the previous word in the buffer."
   (interactive)
-  (let (reg-test/previous-word current-point)
+  (let (autocorrect-previous-word current-point)
     (setq current-point (point))
-    (setq reg-test/previous-word (progn
+    (setq autocorrect-previous-word (progn
                                    (backward-word)
                                    (word-at-point)))
     (goto-char current-point)
-    reg-test/previous-word))
+    autocorrect-previous-word))
 
 (defun autocorrect-flyspell-autocorrect-word ()
   "If the last entered character is SPC, then run flyspell-auto-correct-word on the last word "
   (interactive)
-  (let (previous-word previous-char next-char current-point)
+  (let (previous-word previous-char current-point)
     (setq current-point (point))
-    (setq previous-word (reg-test/previous-word))
-    ;; get the char before point.  If you have just pressed the space bar, then the char before point is SPC.
-    ;; if you have just pressed "h", then the char before point is "h".
+    (setq previous-word (autocorrect-previous-word))
+    ;; get the char before point.  For example, if you have just pressed the space bar, then the char before point is SPC.
+    ;; Another example: if you have just pressed "h", then the char before point is "h".
     (setq previous-char
           (substring (buffer-substring (- (point) 1) (point)) 0))
-    (setq next-char
-          (substring (buffer-substring (point) (+ 1 (point))) 0))
     (when (and (string= previous-char " ")
                ;; the string should just be alphanumeric characters, or it might have punctuation at the end.  Like "Hello?"
                ;; (additional details)
@@ -41,20 +54,24 @@ symbols in the middle of it or numbers, should not be corrected.")
                ;; "I don't care what you think," said Sally, "but if you would like, I can punch you in the face."
                (autocorrect-is-word-correctable previous-word))
       (progn
-        (flyspell-auto-correct-word)))
+        ;; if this word is already defined in abbrev-mode, then just expand it as a user-defined abbreviation.  Otherwise,
+        ;; let flyspell expand it.
+        (if (abbrev-symbol previous-word)
+            (abbrev-insert previous-word)
+          (flyspell-auto-correct-word))))
     (goto-char current-point)))
 
-(defun autocorrect-mode-is-a-prog-mode ())
-(let (return-value)
-  (setq return-value
-        (string= "Parent mode: `prog-mode"
-                 (substring (describe-function major-mode)
-                            (search "Parent mode:"
-                                    (describe-function major-mode))
-                            119)))
-  (delete-window
-   (get-buffer-window "*Help*"))
-  return-value)
+(defun autocorrect-mode-is-a-prog-mode ()
+  (let (return-value)
+    (setq return-value
+          (string= "Parent mode: `prog-mode"
+                   (substring (describe-function major-mode)
+                              (search "Parent mode:"
+                                      (describe-function major-mode))
+                              119)))
+    (delete-window
+     (get-buffer-window "*Help*"))
+    return-value))
 
 (defun autocorrect-mode-is-a-text-mode ()
   (let (return-value)
@@ -81,6 +98,7 @@ symbols in the middle of it or numbers, should not be corrected.")
 (add-hook 'minibuffer-inactive-mode-hook 'autocorrect-remove-autocorrect-hook)
 
 (add-hook 'text-mode-hook #'autocorrect-add-autocorrect-hook)
+(add-hook 'org-mode-hook #'autocorrect-add-autocorrect-hook)
 (add-hook 'programming-mode-hook #'autocorrect-remove-autocorrect-hook)
 
 (defun autocorrect-maybe-turn-on-autocorrect ()
@@ -89,13 +107,40 @@ symbols in the middle of it or numbers, should not be corrected.")
   (interactive)
   (cond
    ((string= major-mode "org-mode") (autocorrect-add-autocorrect-hook))
+   ((string= major-mode "fundamental-mode") (autocorrect-remove-autocorrect-hook))
    ((autocorrect-mode-is-a-text-mode) (autocorrect-add-autocorrect-hook))
-   ((autocorrect-remove-autocorrect-hook))))
+   ((autocorrect-mode-is-a-prog-mode) (autocorrect-remove-autocorrect-hook))
+   (t (autocorrect-remove-autocorrect-hook))))
 
-(cond
- ((string= "hello" "heo") (print "hello"))
- ((string= "hello" "hello") (print "yes")))
 ;;(add-hook 'after-change-major-mode-hook #'autocorrect-maybe-turn-on-autocorrect)
 ;;(remove-hook 'after-change-major-mode-hook #'autocorrect-maybe-turn-on-autocorrect)
+
+(define-key ctl-x-map "\C-i" #'endless/ispell-word-then-abbrev)
+
+(global-set-key (kbd "C-c $") #'endless/ispell-word-then-abbrev)
+
+(defun endless/ispell-word-then-abbrev (p)
+  "Call `ispell-word', then create an abbrev for it.
+With prefix P, create local abbrev. Otherwise it will
+be global."
+  (interactive "P")
+  (let (bef aft)
+    (save-excursion
+      (while (progn
+               (backward-word)
+               (and (setq bef (thing-at-point 'word))
+                    (not (ispell-word nil 'quiet)))))
+      (setq aft (thing-at-point 'word)))
+    (when (and aft bef (not (equal aft bef)))
+      (setq aft (downcase aft))
+      (setq bef (downcase bef))
+      (define-abbrev
+        (if p local-abbrev-table global-abbrev-table)
+        bef aft)
+      (message "\"%s\" now expands to \"%s\" %sally"
+               bef aft (if p "loc" "glob")))))
+
+(setq save-abbrevs 'silently)
+(setq-default abbrev-mode t)
 
 (provide 'init-autocorrect)

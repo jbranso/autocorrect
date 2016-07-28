@@ -1,8 +1,11 @@
 (use-package autocorrect :ensure t
              :config (abbrev-mode 1))
 
-* My autocorrect word package
-My regexp for testing words
+
+* autocorrect-mode
+** Introduction
+Autocorrect-mode will automatically attempt to correct misspelled words as you type them.
+** My regexp for testing words
 #+BEGIN_SRC emacs-lisp
   (defvar autocorrect-regexp "^[a-zA-Z]+[;.,?!)\"]\\{0,3\\}$"
   "autocorrect-regexp is the regexp that makes sure the word is a word that we want to try to correct.
@@ -28,7 +31,7 @@ else$where!?
 I also do regression testing on the autocorrect-regexp [[file:regression-testing.org::*Testing%20my%20regexp][here.]]
 ** is the word correctable
 
-This checks to see if the word is essentially made up only of letters, but maybe ends in punctuation.  OR, if the major mode is org mode, it will not check the word if point is in an org babel code block.
+This checks to see if the word is essentially made up only of letters, but maybe ends in punctuation.  OR, if the major mode is org mode, it will check to see if point is in an org babel code block.  If point is in a src-block, then it will not correct any words at point.
 
 #+BEGIN_SRC emacs-lisp
   (defun autocorrect-is-word-correctable (string)
@@ -42,16 +45,16 @@ This checks to see if the word is essentially made up only of letters, but maybe
 ** Getting the previous word
 This just returns the word before point or the word that point is on.
 #+BEGIN_SRC emacs-lisp
-  (defun reg-test/previous-word ()
+  (defun autocorrect-previous-word ()
     "Returns the previous word in the buffer."
     (interactive)
-    (let (reg-test/previous-word current-point)
+    (let (autocorrect-previous-word current-point)
       (setq current-point (point))
-      (setq reg-test/previous-word (progn
+      (setq autocorrect-previous-word (progn
                                      (backward-word)
                                      (word-at-point)))
       (goto-char current-point)
-      reg-test/previous-word))
+      autocorrect-previous-word))
 #+END_SRC
 
 ** tweaking post-self-insert-hook
@@ -61,15 +64,13 @@ This is where the magic happens!  This function checks to see if the last entere
   (defun autocorrect-flyspell-autocorrect-word ()
     "If the last entered character is SPC, then run flyspell-auto-correct-word on the last word "
     (interactive)
-    (let (previous-word previous-char next-char current-point)
+    (let (previous-word previous-char current-point)
       (setq current-point (point))
-      (setq previous-word (reg-test/previous-word))
-      ;; get the char before point.  If you have just pressed the space bar, then the char before point is SPC.
-      ;; if you have just pressed "h", then the char before point is "h".
+      (setq previous-word (autocorrect-previous-word))
+      ;; get the char before point.  For example, if you have just pressed the space bar, then the char before point is SPC.
+      ;; Another example: if you have just pressed "h", then the char before point is "h".
       (setq previous-char
             (substring (buffer-substring (- (point) 1) (point)) 0))
-      (setq next-char
-            (substring (buffer-substring (point) (+ 1 (point))) 0))
       (when (and (string= previous-char " ")
                  ;; the string should just be alphanumeric characters, or it might have punctuation at the end.  Like "Hello?"
                  ;; (additional details)
@@ -77,23 +78,29 @@ This is where the magic happens!  This function checks to see if the last entere
                  ;; "I don't care what you think," said Sally, "but if you would like, I can punch you in the face."
                  (autocorrect-is-word-correctable previous-word))
         (progn
-          (flyspell-auto-correct-word)))
+          ;; if this word is already defined in abbrev-mode, then just expand it as a user-defined abbreviation.  Otherwise,
+          ;; let flyspell expand it.
+          (if (abbrev-symbol previous-word)
+              (abbrev-insert previous-word)
+            (flyspell-auto-correct-word))))
       (goto-char current-point)))
 #+END_SRC
 
 ** Determine if the major mode is programming-mode
+
+I'm having issues with this defun.
 #+BEGIN_SRC emacs-lisp
-  (defun autocorrect-mode-is-a-prog-mode ())
-  (let (return-value)
-    (setq return-value
-          (string= "Parent mode: `prog-mode"
-                   (substring (describe-function major-mode)
-                              (search "Parent mode:"
-                                      (describe-function major-mode))
-                              119)))
-    (delete-window
-     (get-buffer-window "*Help*"))
-    return-value)
+  (defun autocorrect-mode-is-a-prog-mode ()
+    (let (return-value)
+      (setq return-value
+            (string= "Parent mode: `prog-mode"
+                     (substring (describe-function major-mode)
+                                (search "Parent mode:"
+                                        (describe-function major-mode))
+                                119)))
+      (delete-window
+       (get-buffer-window "*Help*"))
+      return-value))
 #+END_SRC
 ** Determine if major mode is a text-mode
 #+BEGIN_SRC emacs-lisp
@@ -135,6 +142,7 @@ When I open a helm buffer, I DO NOT want auto-matic spell checking on.
 When I open a text-mode, then I'd like to have autocorrect on.  When I open a programming mode, I do not want autocorrect on.
 #+BEGIN_SRC emacs-lisp
   (add-hook 'text-mode-hook #'autocorrect-add-autocorrect-hook)
+  (add-hook 'org-mode-hook #'autocorrect-add-autocorrect-hook)
   (add-hook 'programming-mode-hook #'autocorrect-remove-autocorrect-hook)
 #+END_SRC
 
@@ -142,6 +150,7 @@ Turn on autocorrect last word for all of my text modes.
 It might be a bad idea to turn it on for programming modes.  If you have a variable named "becuase", it'll keep correcting it.
 *** When major made changes, maybe turn on autocorrect
 
+major-mode
 #+BEGIN_SRC emacs-lisp
   (defun autocorrect-maybe-turn-on-autocorrect ()
     "This function checks to see if the current major-mode is text mode or org-mode.  If either is true, then it turns on
@@ -149,18 +158,69 @@ It might be a bad idea to turn it on for programming modes.  If you have a varia
     (interactive)
     (cond
      ((string= major-mode "org-mode") (autocorrect-add-autocorrect-hook))
+     ((string= major-mode "fundamental-mode") (autocorrect-remove-autocorrect-hook))
      ((autocorrect-mode-is-a-text-mode) (autocorrect-add-autocorrect-hook))
+     ((autocorrect-mode-is-a-prog-mode) (autocorrect-remove-autocorrect-hook))
      (t (autocorrect-remove-autocorrect-hook))))
 
   ;;(add-hook 'after-change-major-mode-hook #'autocorrect-maybe-turn-on-autocorrect)
   ;;(remove-hook 'after-change-major-mode-hook #'autocorrect-maybe-turn-on-autocorrect)
 #+END_SRC
+** Allowing the user to add a word to the dictionary.
+*** My hacky autocorrect functionality.
+http://endlessparentheses.com/ispell-and-abbrev-the-perfect-auto-correct.html
+I am not a fantastic typist. My speed is acceptable, but I make a great deal of mistakes. The following snippet has turned me into the Messi of keyboards.
+
+Whenever I make a typo:
+
+Hit C-x C-i, instead of erasing the mistake;
+Select the appropriate correction (thanks to Ispell);
+Sleep easier at night knowing I'll never see that mistake again (thanks to abbrev).
+
+#+BEGIN_SRC emacs-lisp
+(define-key ctl-x-map "\C-i" #'endless/ispell-word-then-abbrev)
+#+END_SRC
+
+#+BEGIN_SRC emacs-lisp
+(global-set-key (kbd "C-c $") #'endless/ispell-word-then-abbrev)
+#+END_SRC
+
+#+BEGIN_SRC emacs-lisp
+(defun endless/ispell-word-then-abbrev (p)
+  "Call `ispell-word', then create an abbrev for it.
+With prefix P, create local abbrev. Otherwise it will
+be global."
+  (interactive "P")
+  (let (bef aft)
+    (save-excursion
+      (while (progn
+               (backward-word)
+               (and (setq bef (thing-at-point 'word))
+                    (not (ispell-word nil 'quiet)))))
+      (setq aft (thing-at-point 'word)))
+    (when (and aft bef (not (equal aft bef)))
+      (setq aft (downcase aft))
+      (setq bef (downcase bef))
+      (define-abbrev
+        (if p local-abbrev-table global-abbrev-table)
+        bef aft)
+      (message "\"%s\" now expands to \"%s\" %sally"
+               bef aft (if p "loc" "glob")))))
+#+END_SRC
+
+#+BEGIN_SRC emacs-lisp
+
+(setq save-abbrevs 'silently)
+(setq-default abbrev-mode t)
+#+END_SRC
+
+
+*** Some words that need to be added to the dictionary
+"mispelled" turns into --> "mi spelled"
 
 ** provide this file
 
 #+BEGIN_SRC emacs-lisp
   (provide 'init-autocorrect)
 #+END_SRC
-
-** Allowing the user to specify how some words should be corrected.
-** Allowing the user to add a word to the dictionary.
+hsnth
