@@ -62,28 +62,38 @@ else$where!?
     (goto-char current-point)))
 
 (defun autocorrect-mode-is-a-prog-mode ()
-  (let (return-value)
-    (setq return-value
-          (string= "Parent mode: `prog-mode"
-                   (substring (describe-function major-mode)
-                              (search "Parent mode:"
-                                      (describe-function major-mode))
-                              119)))
-    (delete-window
-     (get-buffer-window "*Help*"))
-    return-value))
+  (cond
+   ((string= major-mode "ido-mode") (autocorrect-remove-autocorrect-hook))
+   ((string= major-mode "helm-mode") (autocorrect-remove-autocorrect-hook))
+   ((string= major-mode "help-mode") (autocorrect-remove-autocorrect-hook))
+   ((string= major-mode "fundamental-mode") (autocorrect-remove-autocorrect-hook))
+   ((let (return-value)
+      (setq return-value
+            (string= "Parent mode: `prog-mode"
+                     (substring (describe-function major-mode)
+                                (search "Parent mode:"
+                                        (describe-function major-mode))
+                                119)))
+      (delete-window
+       (get-buffer-window "*Help*"))
+      return-value))))
 
 (defun autocorrect-mode-is-a-text-mode ()
-  (let (return-value)
-    (setq return-value
-          (string= "Parent mode: `text-mode"
-                   (substring (describe-function major-mode)
-                              (search "Parent mode:"
-                                      (describe-function major-mode))
-                              119)))
-    (delete-window
-     (get-buffer-window "*Help*"))
-    return-value))
+  (cond
+   ((string= major-mode "ido-mode") (autocorrect-remove-autocorrect-hook))
+   ((string= major-mode "helm-mode") (autocorrect-remove-autocorrect-hook))
+   ((string= major-mode "help-mode") (autocorrect-remove-autocorrect-hook))
+   ((string= major-mode "fundamental-mode") (autocorrect-remove-autocorrect-hook))
+   ((let (return-value)
+      (setq return-value
+            (string= "Parent mode: `text-mode"
+                     (substring (describe-function major-mode)
+                                (search "Parent mode:"
+                                        (describe-function major-mode))
+                                119)))
+      (delete-window
+       (get-buffer-window "*Help*"))
+      return-value))))
 
 (defun autocorrect-add-autocorrect-hook ()
   "This function adds autocorrect-flyspell-autocorrect-word function to be run after post-self-insert-hook."
@@ -106,8 +116,13 @@ else$where!?
   autocorrecting.  If neither is true, then it turns off autocorrecting."
   (interactive)
   (cond
+   ((string= major-mode "ido-mode") (autocorrect-remove-autocorrect-hook))
+   ((string= major-mode "helm-mode") (autocorrect-remove-autocorrect-hook))
+   ((string= major-mode "help-mode") (autocorrect-remove-autocorrect-hook))
+   ((string= major-mode "fundamental-mode") (autocorrect-remove-autocorrect-hook))
    ((string= major-mode "org-mode") (autocorrect-add-autocorrect-hook))
    ((string= major-mode "fundamental-mode") (autocorrect-remove-autocorrect-hook))
+   ((string= major-mode "help-mode") (autocorrect-remove-autocorrect-hook))
    ((autocorrect-mode-is-a-text-mode) (autocorrect-add-autocorrect-hook))
    ((autocorrect-mode-is-a-prog-mode) (autocorrect-remove-autocorrect-hook))
    (t (autocorrect-remove-autocorrect-hook))))

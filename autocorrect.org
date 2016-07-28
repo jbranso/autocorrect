@@ -91,30 +91,40 @@ This is where the magic happens!  This function checks to see if the last entere
 I'm having issues with this defun.
 #+BEGIN_SRC emacs-lisp
   (defun autocorrect-mode-is-a-prog-mode ()
-    (let (return-value)
-      (setq return-value
-            (string= "Parent mode: `prog-mode"
-                     (substring (describe-function major-mode)
-                                (search "Parent mode:"
-                                        (describe-function major-mode))
-                                119)))
-      (delete-window
-       (get-buffer-window "*Help*"))
-      return-value))
+    (cond
+     ((string= major-mode "ido-mode") (autocorrect-remove-autocorrect-hook))
+     ((string= major-mode "helm-mode") (autocorrect-remove-autocorrect-hook))
+     ((string= major-mode "help-mode") (autocorrect-remove-autocorrect-hook))
+     ((string= major-mode "fundamental-mode") (autocorrect-remove-autocorrect-hook))
+     ((let (return-value)
+        (setq return-value
+              (string= "Parent mode: `prog-mode"
+                       (substring (describe-function major-mode)
+                                  (search "Parent mode:"
+                                          (describe-function major-mode))
+                                  119)))
+        (delete-window
+         (get-buffer-window "*Help*"))
+        return-value))))
 #+END_SRC
 ** Determine if major mode is a text-mode
 #+BEGIN_SRC emacs-lisp
   (defun autocorrect-mode-is-a-text-mode ()
-    (let (return-value)
-      (setq return-value
-            (string= "Parent mode: `text-mode"
-                     (substring (describe-function major-mode)
-                                (search "Parent mode:"
-                                        (describe-function major-mode))
-                                119)))
-      (delete-window
-       (get-buffer-window "*Help*"))
-      return-value))
+    (cond
+     ((string= major-mode "ido-mode") (autocorrect-remove-autocorrect-hook))
+     ((string= major-mode "helm-mode") (autocorrect-remove-autocorrect-hook))
+     ((string= major-mode "help-mode") (autocorrect-remove-autocorrect-hook))
+     ((string= major-mode "fundamental-mode") (autocorrect-remove-autocorrect-hook))
+     ((let (return-value)
+        (setq return-value
+              (string= "Parent mode: `text-mode"
+                       (substring (describe-function major-mode)
+                                  (search "Parent mode:"
+                                          (describe-function major-mode))
+                                  119)))
+        (delete-window
+         (get-buffer-window "*Help*"))
+        return-value))))
 #+END_SRC
 ** Defining some hooks
 *** Functions to turn on and turn off autocorrect
@@ -148,7 +158,7 @@ When I open a text-mode, then I'd like to have autocorrect on.  When I open a pr
 
 Turn on autocorrect last word for all of my text modes.
 It might be a bad idea to turn it on for programming modes.  If you have a variable named "becuase", it'll keep correcting it.
-*** When major made changes, maybe turn on autocorrect
+*** When major made changes, maybe turn on/off autocorrect
 
 major-mode
 #+BEGIN_SRC emacs-lisp
@@ -157,8 +167,13 @@ major-mode
     autocorrecting.  If neither is true, then it turns off autocorrecting."
     (interactive)
     (cond
+     ((string= major-mode "ido-mode") (autocorrect-remove-autocorrect-hook))
+     ((string= major-mode "helm-mode") (autocorrect-remove-autocorrect-hook))
+     ((string= major-mode "help-mode") (autocorrect-remove-autocorrect-hook))
+     ((string= major-mode "fundamental-mode") (autocorrect-remove-autocorrect-hook))
      ((string= major-mode "org-mode") (autocorrect-add-autocorrect-hook))
      ((string= major-mode "fundamental-mode") (autocorrect-remove-autocorrect-hook))
+     ((string= major-mode "help-mode") (autocorrect-remove-autocorrect-hook))
      ((autocorrect-mode-is-a-text-mode) (autocorrect-add-autocorrect-hook))
      ((autocorrect-mode-is-a-prog-mode) (autocorrect-remove-autocorrect-hook))
      (t (autocorrect-remove-autocorrect-hook))))
@@ -166,6 +181,7 @@ major-mode
   ;;(add-hook 'after-change-major-mode-hook #'autocorrect-maybe-turn-on-autocorrect)
   ;;(remove-hook 'after-change-major-mode-hook #'autocorrect-maybe-turn-on-autocorrect)
 #+END_SRC
+
 ** Allowing the user to add a word to the dictionary.
 *** My hacky autocorrect functionality.
 http://endlessparentheses.com/ispell-and-abbrev-the-perfect-auto-correct.html

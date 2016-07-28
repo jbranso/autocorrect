@@ -215,10 +215,11 @@ This should get me the after string.
   (interactive)
   (remove-hook 'post-self-insert-hook 'my/flyspell-auto-correct-word))
 
-
-  So today I had a rather interesting day!  I worked a lot with Katie.  And I was able to have oodles of fun with working at uni place.  I think that my auto-correct package might just be working!  How cool is that?  eh?  incorrect interested interesting
 ** When you type in chars at the end of a buffer you get the error "Args out of range: #<buffer regression-testing.org>,9421,9428"
 ** Correcting two words together doesn't work.
 If point is at '$', then pressing space there will do the following
 "becaues$because" --> "becaues because"
 This means that the word "becaues" did not get corrected.
+** running these functions in fundamental mode will probably result in an error.
+"autocorrect-is-a-prog-mode"
+"autocorrect-is-a-text-mode"
