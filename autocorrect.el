@@ -76,11 +76,11 @@ else$where!?
 
   (autocorrect-add-autocorrect-hook)
 
-(define-key ctl-x-map "\C-i" #'endless/ispell-word-then-abbrev)
+(define-key ctl-x-map "\C-i" #'autocorrect-ispell-word-the-abbrev)
 
-(global-set-key (kbd "C-c $") #'endless/ispell-word-then-abbrev)
+(global-set-key (kbd "C-c C-x $") #'autocorrect-ispell-word-the-abbrev)
 
-(defun endless/ispell-word-then-abbrev (p)
+(defun autocorrect-ispell-word-the-abbrev (p)
   "Call `ispell-word', then create an abbrev for it.
 With prefix P, create local abbrev. Otherwise it will
 be global."
