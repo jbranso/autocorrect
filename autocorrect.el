@@ -40,60 +40,27 @@ else$where!?
 (defun autocorrect-flyspell-autocorrect-word ()
   "If the last entered character is SPC, then run flyspell-auto-correct-word on the last word "
   (interactive)
-  (let (previous-word previous-char current-point)
-    (setq current-point (point))
-    (setq previous-word (autocorrect-previous-word))
-    ;; get the char before point.  For example, if you have just pressed the space bar, then the char before point is SPC.
-    ;; Another example: if you have just pressed "h", then the char before point is "h".
-    (setq previous-char
-          (substring (buffer-substring (- (point) 1) (point)) 0))
-    (when (and (string= previous-char " ")
-               ;; the string should just be alphanumeric characters, or it might have punctuation at the end.  Like "Hello?"
-               ;; (additional details)
-               ;; "I am a sentence," said me.
-               ;; "I don't care what you think," said Sally, "but if you would like, I can punch you in the face."
-               (autocorrect-is-word-correctable previous-word))
-      (progn
-        ;; if this word is already defined in abbrev-mode, then just expand it as a user-defined abbreviation.  Otherwise,
-        ;; let flyspell expand it.
-        (if (abbrev-symbol previous-word)
-            (abbrev-insert previous-word)
-          (flyspell-auto-correct-word))))
-    (goto-char current-point)))
-
-(defun autocorrect-mode-is-a-prog-mode ()
-  (cond
-   ((string= major-mode "ido-mode") (autocorrect-remove-autocorrect-hook))
-   ((string= major-mode "helm-mode") (autocorrect-remove-autocorrect-hook))
-   ((string= major-mode "help-mode") (autocorrect-remove-autocorrect-hook))
-   ((string= major-mode "fundamental-mode") (autocorrect-remove-autocorrect-hook))
-   ((let (return-value)
-      (setq return-value
-            (string= "Parent mode: `prog-mode"
-                     (substring (describe-function major-mode)
-                                (search "Parent mode:"
-                                        (describe-function major-mode))
-                                119)))
-      (delete-window
-       (get-buffer-window "*Help*"))
-      return-value))))
-
-(defun autocorrect-mode-is-a-text-mode ()
-  (cond
-   ((string= major-mode "ido-mode") (autocorrect-remove-autocorrect-hook))
-   ((string= major-mode "helm-mode") (autocorrect-remove-autocorrect-hook))
-   ((string= major-mode "help-mode") (autocorrect-remove-autocorrect-hook))
-   ((string= major-mode "fundamental-mode") (autocorrect-remove-autocorrect-hook))
-   ((let (return-value)
-      (setq return-value
-            (string= "Parent mode: `text-mode"
-                     (substring (describe-function major-mode)
-                                (search "Parent mode:"
-                                        (describe-function major-mode))
-                                119)))
-      (delete-window
-       (get-buffer-window "*Help*"))
-      return-value))))
+  (when (string= major-mode "org-mode")
+    (let (previous-word previous-char current-point)
+      (setq current-point (point))
+      (setq previous-word (autocorrect-previous-word))
+      ;; get the char before point.  For example, if you have just pressed the space bar, then the char before point is SPC.
+      ;; Another example: if you have just pressed "h", then the char before point is "h".
+      (setq previous-char
+            (substring (buffer-substring (- (point) 1) (point)) 0))
+      (when (and (string= previous-char " ")
+                 ;; the string should just be alphanumeric characters, or it might have punctuation at the end.  Like "Hello?"
+                 ;; (additional details)
+                 ;; "I am a sentence," said me.
+                 ;; "I don't care what you think," said Sally, "but if you would like, I can punch you in the face."
+                 (autocorrect-is-word-correctable previous-word))
+        (progn
+          ;; if this word is already defined in abbrev-mode, then just expand it as a user-defined abbreviation.  Otherwise,
+          ;; let flyspell expand it.
+          (if (abbrev-symbol previous-word)
+              (abbrev-insert previous-word)
+            (flyspell-auto-correct-word))))
+      (goto-char current-point))))
 
 (defun autocorrect-add-autocorrect-hook ()
   "This function adds autocorrect-flyspell-autocorrect-word function to be run after post-self-insert-hook."
@@ -105,30 +72,7 @@ else$where!?
   (interactive)
   (remove-hook 'post-self-insert-hook 'autocorrect-flyspell-autocorrect-word))
 
-(add-hook 'minibuffer-inactive-mode-hook 'autocorrect-remove-autocorrect-hook)
-
-(add-hook 'text-mode-hook #'autocorrect-add-autocorrect-hook)
-(add-hook 'org-mode-hook #'autocorrect-add-autocorrect-hook)
-(add-hook 'programming-mode-hook #'autocorrect-remove-autocorrect-hook)
-
-(defun autocorrect-maybe-turn-on-autocorrect ()
-  "This function checks to see if the current major-mode is text mode or org-mode.  If either is true, then it turns on
-  autocorrecting.  If neither is true, then it turns off autocorrecting."
-  (interactive)
-  (cond
-   ((string= major-mode "ido-mode") (autocorrect-remove-autocorrect-hook))
-   ((string= major-mode "helm-mode") (autocorrect-remove-autocorrect-hook))
-   ((string= major-mode "help-mode") (autocorrect-remove-autocorrect-hook))
-   ((string= major-mode "fundamental-mode") (autocorrect-remove-autocorrect-hook))
-   ((string= major-mode "org-mode") (autocorrect-add-autocorrect-hook))
-   ((string= major-mode "fundamental-mode") (autocorrect-remove-autocorrect-hook))
-   ((string= major-mode "help-mode") (autocorrect-remove-autocorrect-hook))
-   ((autocorrect-mode-is-a-text-mode) (autocorrect-add-autocorrect-hook))
-   ((autocorrect-mode-is-a-prog-mode) (autocorrect-remove-autocorrect-hook))
-   (t (autocorrect-remove-autocorrect-hook))))
-
-;;(add-hook 'after-change-major-mode-hook #'autocorrect-maybe-turn-on-autocorrect)
-;;(remove-hook 'after-change-major-mode-hook #'autocorrect-maybe-turn-on-autocorrect)
+  (autocorrect-add-autocorrect-hook)
 
 (define-key ctl-x-map "\C-i" #'endless/ispell-word-then-abbrev)
 

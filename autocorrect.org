@@ -4,7 +4,7 @@
 
 * autocorrect-mode
 ** Introduction
-Autocorrect-mode will automatically attempt to correct misspelled words as you type them.
+Autocorrect-mode will automatically attempt to correct misspelled words as you type them.  Right now only org-mode is supported, and it is a pretty hacky way of it working.  Essentially, it is always run after a key press, BUT if the current mode is NOT org-mode, then nothing happens.  More on this [[*tweaking post-self-insert-hook][here]].
 ** My regexp for testing words
 #+BEGIN_SRC emacs-lisp
   (defvar autocorrect-regexp "^[a-zA-Z]+[;.,?!)\"]\\{0,3\\}$"
@@ -64,29 +64,32 @@ This is where the magic happens!  This function checks to see if the last entere
   (defun autocorrect-flyspell-autocorrect-word ()
     "If the last entered character is SPC, then run flyspell-auto-correct-word on the last word "
     (interactive)
-    (let (previous-word previous-char current-point)
-      (setq current-point (point))
-      (setq previous-word (autocorrect-previous-word))
-      ;; get the char before point.  For example, if you have just pressed the space bar, then the char before point is SPC.
-      ;; Another example: if you have just pressed "h", then the char before point is "h".
-      (setq previous-char
-            (substring (buffer-substring (- (point) 1) (point)) 0))
-      (when (and (string= previous-char " ")
-                 ;; the string should just be alphanumeric characters, or it might have punctuation at the end.  Like "Hello?"
-                 ;; (additional details)
-                 ;; "I am a sentence," said me.
-                 ;; "I don't care what you think," said Sally, "but if you would like, I can punch you in the face."
-                 (autocorrect-is-word-correctable previous-word))
-        (progn
-          ;; if this word is already defined in abbrev-mode, then just expand it as a user-defined abbreviation.  Otherwise,
-          ;; let flyspell expand it.
-          (if (abbrev-symbol previous-word)
-              (abbrev-insert previous-word)
-            (flyspell-auto-correct-word))))
-      (goto-char current-point)))
+    (when (or
+           (string= major-mode "org-mode")
+           (string= major-mode "text-mode"))
+      (let (previous-word previous-char current-point)
+        (setq current-point (point))
+        (setq previous-word (autocorrect-previous-word))
+        ;; get the char before point.  For example, if you have just pressed the space bar, then the char before point is SPC.
+        ;; Another example: if you have just pressed "h", then the char before point is "h".
+        (setq previous-char
+              (substring (buffer-substring (- (point) 1) (point)) 0))
+        (when (and (string= previous-char " ")
+                   ;; the string should just be alphanumeric characters, or it might have punctuation at the end.  Like "Hello?"
+                   ;; (additional details)
+                   ;; "I am a sentence," said me.
+                   ;; "I don't care what you think," said Sally, "but if you would like, I can punch you in the face."
+                   (autocorrect-is-word-correctable previous-word))
+          (progn
+            ;; if this word is already defined in abbrev-mode, then just expand it as a user-defined abbreviation.  Otherwise,
+            ;; let flyspell expand it.
+            (if (abbrev-symbol previous-word)
+                (abbrev-insert previous-word)
+              (flyspell-auto-correct-word))))
+        (goto-char current-point))))
 #+END_SRC
 
-** Determine if the major mode is programming-mode
+** COMMENT Determine if the major mode is programming-mode
 
 I'm having issues with this defun.
 #+BEGIN_SRC emacs-lisp
@@ -107,7 +110,7 @@ I'm having issues with this defun.
          (get-buffer-window "*Help*"))
         return-value))))
 #+END_SRC
-** Determine if major mode is a text-mode
+** COMMENT Determine if major mode is a text-mode
 #+BEGIN_SRC emacs-lisp
   (defun autocorrect-mode-is-a-text-mode ()
     (cond
@@ -129,25 +132,26 @@ I'm having issues with this defun.
 ** Defining some hooks
 *** Functions to turn on and turn off autocorrect
 #+BEGIN_SRC emacs-lisp
-    (defun autocorrect-add-autocorrect-hook ()
-      "This function adds autocorrect-flyspell-autocorrect-word function to be run after post-self-insert-hook."
-      (interactive)
-      (add-hook 'post-self-insert-hook 'autocorrect-flyspell-autocorrect-word))
+  (defun autocorrect-add-autocorrect-hook ()
+    "This function adds autocorrect-flyspell-autocorrect-word function to be run after post-self-insert-hook."
+    (interactive)
+    (add-hook 'post-self-insert-hook 'autocorrect-flyspell-autocorrect-word))
 
-    (defun autocorrect-remove-autocorrect-hook ()
-      "This function adds autocorrect-flyspell-autocorrect-word function to be run after post-self-insert-hook."
-      (interactive)
-      (remove-hook 'post-self-insert-hook 'autocorrect-flyspell-autocorrect-word))
+  (defun autocorrect-remove-autocorrect-hook ()
+    "This function adds autocorrect-flyspell-autocorrect-word function to be run after post-self-insert-hook."
+    (interactive)
+    (remove-hook 'post-self-insert-hook 'autocorrect-flyspell-autocorrect-word))
 
+    (autocorrect-add-autocorrect-hook)
 #+END_SRC
 
-*** turn off autocorrect when helm opens up
+*** COMMENT turn off autocorrect when helm opens up
 When I open a helm buffer, I DO NOT want auto-matic spell checking on.
 #+BEGIN_SRC emacs-lisp
     (add-hook 'minibuffer-inactive-mode-hook 'autocorrect-remove-autocorrect-hook)
 #+END_SRC
 
-*** Turn on autocorrect for text modes but not programmming modes
+*** COMMENT Turn on autocorrect for text modes but not programmming modes
 
 When I open a text-mode, then I'd like to have autocorrect on.  When I open a programming mode, I do not want autocorrect on.
 #+BEGIN_SRC emacs-lisp
@@ -158,7 +162,7 @@ When I open a text-mode, then I'd like to have autocorrect on.  When I open a pr
 
 Turn on autocorrect last word for all of my text modes.
 It might be a bad idea to turn it on for programming modes.  If you have a variable named "becuase", it'll keep correcting it.
-*** When major made changes, maybe turn on/off autocorrect
+*** COMMENT When major made changes, maybe turn on/off autocorrect
 
 major-mode
 #+BEGIN_SRC emacs-lisp
@@ -167,18 +171,17 @@ major-mode
     autocorrecting.  If neither is true, then it turns off autocorrecting."
     (interactive)
     (cond
+     ((string= major-mode "org-mode") (autocorrect-add-autocorrect-hook))
      ((string= major-mode "ido-mode") (autocorrect-remove-autocorrect-hook))
      ((string= major-mode "helm-mode") (autocorrect-remove-autocorrect-hook))
      ((string= major-mode "help-mode") (autocorrect-remove-autocorrect-hook))
-     ((string= major-mode "fundamental-mode") (autocorrect-remove-autocorrect-hook))
-     ((string= major-mode "org-mode") (autocorrect-add-autocorrect-hook))
      ((string= major-mode "fundamental-mode") (autocorrect-remove-autocorrect-hook))
      ((string= major-mode "help-mode") (autocorrect-remove-autocorrect-hook))
      ((autocorrect-mode-is-a-text-mode) (autocorrect-add-autocorrect-hook))
      ((autocorrect-mode-is-a-prog-mode) (autocorrect-remove-autocorrect-hook))
      (t (autocorrect-remove-autocorrect-hook))))
 
-  ;;(add-hook 'after-change-major-mode-hook #'autocorrect-maybe-turn-on-autocorrect)
+  (add-hook 'after-change-major-mode-hook #'autocorrect-maybe-turn-on-autocorrect)
   ;;(remove-hook 'after-change-major-mode-hook #'autocorrect-maybe-turn-on-autocorrect)
 #+END_SRC
 
