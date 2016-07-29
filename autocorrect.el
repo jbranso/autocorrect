@@ -1,3 +1,45 @@
+;;; autocorrect.el --- automatically attempt to correct misspelled words as you type them.
+
+;;; Copyright (C) 2016
+
+
+;; Carstens outline-mode for keeping track of everything.
+;; Copyright (C) 2004-2016 Free Software Foundation, Inc.
+;;
+;; Author: Carsten Dominik <carsten at orgmode dot org>
+;; Maintainer: Carsten Dominik <carsten at orgmode dot org>
+;; Keywords: outlines, hypermedia, calendar, wp
+;; Homepage: http://orgmode.org
+;;
+;; This file is part of GNU Emacs.
+;;
+;; GNU Emacs is free software: you can redistribute it and/or modify
+;; it under the terms of the GNU General Public License as published by
+;; the Free Software Foundation, either version 3 of the License, or
+;; (at your option) any later version.
+;;
+;; GNU Emacs is distributed in the hope that it will be useful,
+;; but WITHOUT ANY WARRANTY; without even the implied warranty of
+;; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+;; GNU General Public License for more details.
+;;
+;; You should have received a copy of the GNU General Public License
+;; along with GNU Emacs.  If not, see <http://www.gnu.org/licenses/>.
+;;
+;;; Commentary:
+;;
+;; autocorrect automatically attempts to correct misspelled words as you type them. Currently only text-mode and org-mode are
+;; supported.
+;;
+;; Installation and Activation
+;; ---------------------------
+;; See the corresponding sections in the readme at
+;;
+;;  https://github.com/jbranso/autocorrect/blob/master/README.md
+;;
+;;
+;;; Code:
+
 (defvar autocorrect-regexp "^[a-zA-Z]+[;.,?!)\"]\\{0,3\\}$"
   "autocorrect-regexp is the regexp that makes sure the word is a word that we want to try to correct.
 For example, my package should not try to correct a variable name.  So any word with any special
@@ -105,3 +147,4 @@ be global."
 (setq-default abbrev-mode t)
 
 (provide 'init-autocorrect)
+;;; autocorrect.el ends here

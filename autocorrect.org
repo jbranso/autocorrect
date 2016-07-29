@@ -5,6 +5,49 @@
 * autocorrect-mode
 ** Introduction
 Autocorrect-mode will automatically attempt to correct misspelled words as you type them.  Right now only org-mode is supported, and it is a pretty hacky way of it working.  Essentially, it is always run after a key press, BUT if the current mode is NOT org-mode, then nothing happens.  More on this [[*tweaking post-self-insert-hook][here]].
+
+Here are my package comments for the .el file.
+#+BEGIN_SRC emacs-lisp
+;;; autocorrect.el --- automatically attempt to correct misspelled words as you type them.
+
+;;; Copyright (C) 2016
+;;
+;;
+;; Author: Joshua Branson
+;; Maintainer: Joshua Branson
+;; Keywords: autocorrect, org-mode, text-mode
+;; Homepage: https://github.com/jbranso/autocorrect/blob/master/README.md
+;;
+;; This file is NOT part of GNU Emacs.
+;;
+;; Autocorrect is free software: you can redistribute it and/or modify
+;; it under the terms of the GNU General Public License as published by
+;; the Free Software Foundation, either version 3 of the License, or
+;; (at your option) any later version.
+
+;; Autocorrect is distributed in the hope that it will be useful,
+;; but WITHOUT ANY WARRANTY; without even the implied warranty of
+;; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+;; GNU General Public License for more details.
+
+;; You should have received a copy of the GNU General Public License
+;; along with Autocorrect.  If not, see <http://www.gnu.org/licenses/>.
+;;
+;;; Commentary:
+;;
+;; autocorrect automatically attempts to correct misspelled words as you type them. Currently only text-mode and org-mode are
+;; supported.
+;;
+;; Installation and Activation
+;; ---------------------------
+;; See the corresponding sections in the readme at
+;;
+;;  https://github.com/jbranso/autocorrect/blob/master/README.md
+;;
+;;; Code:
+
+
+#+END_SRC
 ** My regexp for testing words
 #+BEGIN_SRC emacs-lisp
   (defvar autocorrect-regexp "^[a-zA-Z]+[;.,?!)\"]\\{0,3\\}$"
@@ -240,4 +283,5 @@ be global."
 
 #+BEGIN_SRC emacs-lisp
   (provide 'init-autocorrect)
+  ;;; autocorrect.el ends here
 #+END_SRC
