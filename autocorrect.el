@@ -40,7 +40,9 @@ else$where!?
 (defun autocorrect-flyspell-autocorrect-word ()
   "If the last entered character is SPC, then run flyspell-auto-correct-word on the last word "
   (interactive)
-  (when (string= major-mode "org-mode")
+  (when (or
+         (string= major-mode "org-mode")
+         (string= major-mode "text-mode"))
     (let (previous-word previous-char current-point)
       (setq current-point (point))
       (setq previous-word (autocorrect-previous-word))

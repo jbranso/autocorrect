@@ -228,7 +228,6 @@ be global."
 #+END_SRC
 
 #+BEGIN_SRC emacs-lisp
-
 (setq save-abbrevs 'silently)
 (setq-default abbrev-mode t)
 #+END_SRC
@@ -242,4 +241,3 @@ be global."
 #+BEGIN_SRC emacs-lisp
   (provide 'init-autocorrect)
 #+END_SRC
-hsnth
