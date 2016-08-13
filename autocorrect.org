@@ -76,7 +76,6 @@ I also do regression testing on the autocorrect-regexp [[file:regression-testing
 
 This checks to see if the word is essentially made up only of letters, but maybe ends in punctuation.  OR, if the major mode is org mode, it will check to see if point is in an org babel code block.  If point is in a src-block, then it will not correct any words at point.
 
-
 #+BEGIN_SRC emacs-lisp
   (defun autocorrect-is-word-correctable (string)
     (if (string= major-mode "org-mode")
@@ -304,9 +303,7 @@ To fix this, with point on "agapism", run the command ~autocorrect-add-word-at-p
 
 *** COMMENT add a word to the dictionary the hacky way
 
-This stops autocorrect from correcting a word that it believes is incorrect.
-
-It is a hacky way to adds a word to the global abbrev file.  It is probably much better to just add it to your personal dictionary.
+This stops autocorrect from correcting a word that it believes is incorrect. It is a hacky way to adds a word to the global abbrev file.  It is probably much better to just add it to your personal dictionary.
 
 #+BEGIN_SRC emacs-lisp
   (defun autocorrect-add-word-to-dictionary (word)
