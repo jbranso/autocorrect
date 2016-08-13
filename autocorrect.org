@@ -84,24 +84,10 @@ This checks to see if the word is essentially made up only of letters, but maybe
          (string-match autocorrect-regexp string)
          (let (my/org-element-at-point)
            (setq my/org-element-at-point (car (org-element-at-point)))
-           (not (or (string= "src-block" my/org-element-at-point)
-                    (string= "node-property" my/org-element-at-point)
-                    (string= "drawer" my/org-element-at-point)
-                    (string= "keyword" my/org-element-at-point)
-                    (string= "babel-call" my/org-element-at-point)
-                    (string= "clock" my/org-element-at-point)
-                    (string= "latex-environment" my/org-element-at-point)
-                    (string= "table" my/org-element-at-point)
-                    (string= "table-row" my/org-element-at-point)
-                    (string= "export-snippet" my/org-element-at-point)
-                    (string= "footnote-reference" my/org-element-at-point)
-                    (string= "inline-babel-call" my/org-element-at-point)
-                    (string= "inline-src-block" my/org-element-at-point)
-                    (string= "link" my/org-element-at-point)
-                    (string= "subscript" my/org-element-at-point)
-                    (string= "superscript" my/org-element-at-point)
-                    (string= "timestamp" my/org-element-at-point))))
-      (string-match autocorrect-regexp string))))
+           (or
+            (string= "paragraph" my/org-element-at-point)
+            (string= "headline" my/org-element-at-point)))
+         (string-match autocorrect-regexp string))))
 #+END_SRC
 ** Getting the previous word
 This just returns the word before point or the word that point is on.
@@ -326,7 +312,6 @@ It is a hacky way to adds a word to the global abbrev file.  It is probably much
   (defun autocorrect-add-word-to-dictionary (word)
     (interactive "sAdd Word to Dictionary: ")
     (define-abbrev global-abbrev-table word word))
-
 #+END_SRC
 
 ** provide this file
