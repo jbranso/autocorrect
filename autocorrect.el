@@ -1,30 +1,27 @@
 ;;; autocorrect.el --- automatically attempt to correct misspelled words as you type them.
 
 ;;; Copyright (C) 2016
-
-
-;; Carstens outline-mode for keeping track of everything.
-;; Copyright (C) 2004-2016 Free Software Foundation, Inc.
 ;;
-;; Author: Carsten Dominik <carsten at orgmode dot org>
-;; Maintainer: Carsten Dominik <carsten at orgmode dot org>
-;; Keywords: outlines, hypermedia, calendar, wp
-;; Homepage: http://orgmode.org
 ;;
-;; This file is part of GNU Emacs.
+;; Author: Joshua Branson
+;; Maintainer: Joshua Branson
+;; Keywords: autocorrect, org-mode, text-mode
+;; Homepage: https://github.com/jbranso/autocorrect/blob/master/README.md
 ;;
-;; GNU Emacs is free software: you can redistribute it and/or modify
+;; This file is NOT part of GNU Emacs.
+;;
+;; Autocorrect is free software: you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
 ;; the Free Software Foundation, either version 3 of the License, or
 ;; (at your option) any later version.
-;;
-;; GNU Emacs is distributed in the hope that it will be useful,
+
+;; Autocorrect is distributed in the hope that it will be useful,
 ;; but WITHOUT ANY WARRANTY; without even the implied warranty of
 ;; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 ;; GNU General Public License for more details.
-;;
+
 ;; You should have received a copy of the GNU General Public License
-;; along with GNU Emacs.  If not, see <http://www.gnu.org/licenses/>.
+;; along with Autocorrect.  If not, see <http://www.gnu.org/licenses/>.
 ;;
 ;;; Commentary:
 ;;
@@ -36,7 +33,6 @@
 ;; See the corresponding sections in the readme at
 ;;
 ;;  https://github.com/jbranso/autocorrect/blob/master/README.md
-;;
 ;;
 ;;; Code:
 
@@ -64,9 +60,26 @@ else$where!?
   (if (string= major-mode "org-mode")
       (and
        (string-match autocorrect-regexp string)
-       (not (string= "src-block"
-                     (car (org-element-at-point)))))
-    (string-match autocorrect-regexp string)))
+       (let (my/org-element-at-point)
+         (setq my/org-element-at-point (car (org-element-at-point)))
+         (not (or (string= "src-block" my/org-element-at-point)
+                  (string= "node-property" my/org-element-at-point)
+                  (string= "drawer" my/org-element-at-point)
+                  (string= "keyword" my/org-element-at-point)
+                  (string= "babel-call" my/org-element-at-point)
+                  (string= "clock" my/org-element-at-point)
+                  (string= "latex-environment" my/org-element-at-point)
+                  (string= "table" my/org-element-at-point)
+                  (string= "table-row" my/org-element-at-point)
+                  (string= "export-snippet" my/org-element-at-point)
+                  (string= "footnote-reference" my/org-element-at-point)
+                  (string= "inline-babel-call" my/org-element-at-point)
+                  (string= "inline-src-block" my/org-element-at-point)
+                  (string= "link" my/org-element-at-point)
+                  (string= "subscript" my/org-element-at-point)
+                  (string= "superscript" my/org-element-at-point)
+                  (string= "timestamp" my/org-element-at-point))))
+    (string-match autocorrect-regexp string))))
 
 (defun autocorrect-previous-word ()
   "Returns the previous word in the buffer."
@@ -145,6 +158,10 @@ be global."
 
 (setq save-abbrevs 'silently)
 (setq-default abbrev-mode t)
+
+(defun autocorrect-add-word-to-dictionary (word)
+  (interactive "sAdd Word to Dictionary: ")
+  (define-abbrev global-abbrev-table word word))
 
 (provide 'init-autocorrect)
 ;;; autocorrect.el ends here

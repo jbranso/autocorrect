@@ -76,14 +76,32 @@ I also do regression testing on the autocorrect-regexp [[file:regression-testing
 
 This checks to see if the word is essentially made up only of letters, but maybe ends in punctuation.  OR, if the major mode is org mode, it will check to see if point is in an org babel code block.  If point is in a src-block, then it will not correct any words at point.
 
+
 #+BEGIN_SRC emacs-lisp
   (defun autocorrect-is-word-correctable (string)
     (if (string= major-mode "org-mode")
         (and
          (string-match autocorrect-regexp string)
-         (not (string= "src-block"
-                       (car (org-element-at-point)))))
-      (string-match autocorrect-regexp string)))
+         (let (my/org-element-at-point)
+           (setq my/org-element-at-point (car (org-element-at-point)))
+           (not (or (string= "src-block" my/org-element-at-point)
+                    (string= "node-property" my/org-element-at-point)
+                    (string= "drawer" my/org-element-at-point)
+                    (string= "keyword" my/org-element-at-point)
+                    (string= "babel-call" my/org-element-at-point)
+                    (string= "clock" my/org-element-at-point)
+                    (string= "latex-environment" my/org-element-at-point)
+                    (string= "table" my/org-element-at-point)
+                    (string= "table-row" my/org-element-at-point)
+                    (string= "export-snippet" my/org-element-at-point)
+                    (string= "footnote-reference" my/org-element-at-point)
+                    (string= "inline-babel-call" my/org-element-at-point)
+                    (string= "inline-src-block" my/org-element-at-point)
+                    (string= "link" my/org-element-at-point)
+                    (string= "subscript" my/org-element-at-point)
+                    (string= "superscript" my/org-element-at-point)
+                    (string= "timestamp" my/org-element-at-point))))
+      (string-match autocorrect-regexp string))))
 #+END_SRC
 ** Getting the previous word
 This just returns the word before point or the word that point is on.
@@ -229,7 +247,11 @@ major-mode
 #+END_SRC
 
 ** Allowing the user to add a word to the dictionary.
-*** My hacky autocorrect functionality.
+*** Let a user define a custom expansion that differs from the default
+
+Suppose you have incorrectly spelled "misspelling" to "mispelling", and flyspell incorrectly corrects your word to "mi spelling".  You can use this code that I found on endlessparenthesis.com to tell flyspell how to correct a particular misspelling.
+Essentially you spelling the word "mispelling" and with point after the "g" is "mispelling", you then type ~C-c C-x $~ or call ~autocorrect-ispell-word-the-abbrev~.  This prompts you to specify what correct word you want "mispelling" to be corrected.
+
 http://endlessparentheses.com/ispell-and-abbrev-the-perfect-auto-correct.html
 I am not a fantastic typist. My speed is acceptable, but I make a great deal of mistakes. The following snippet has turned me into the Messi of keyboards.
 
@@ -275,9 +297,37 @@ be global."
 (setq-default abbrev-mode t)
 #+END_SRC
 
+*** Add a word to flyspell's dictionary
 
-*** Some words that need to be added to the dictionary
-"mispelled" turns into --> "mi spelled"
+There already is a way to do this.  When you run the command ~(autocorrect-ispell-word-the-abbrev)~, you can type "i" [fn:1] to save that word to your local dictionary, but some people might not know that.  This is a specific function to add the word at point to a dictionary.  I found out how to do it here: http://stackoverflow.com/questions/22107182/in-emacs-flyspell-mode-how-to-add-new-word-to-dictionary
+
+#+BEGIN_SRC emacs-lisp
+(defun autocorrect-add-word-at-point-to-flyspell-dictionary ()
+  (interactive)
+  (let ((current-location (point))
+         (word (flyspell-get-word)))
+    (when (consp word)
+      (flyspell-do-correct 'save nil (car word) current-location (cadr word) (caddr word) current-location))))
+#+END_SRC
+
+So what's a use case?  Simply.  You could use this [[http://phrontistery.info/isms.html][link]] to find some obscure validly spelled words that flyspell will wrongly spell.
+
+For example, "agapism" (the ethics of love) gets autocorrected to "ageism".
+
+To fix this, with point on "agapism", run the command ~autocorrect-add-word-at-point-to-flyspell-dictionary ()~.
+
+*** COMMENT add a word to the dictionary the hacky way
+
+This stops autocorrect from correcting a word that it believes is incorrect.
+
+It is a hacky way to adds a word to the global abbrev file.  It is probably much better to just add it to your personal dictionary.
+
+#+BEGIN_SRC emacs-lisp
+  (defun autocorrect-add-word-to-dictionary (word)
+    (interactive "sAdd Word to Dictionary: ")
+    (define-abbrev global-abbrev-table word word))
+
+#+END_SRC
 
 ** provide this file
 
@@ -285,3 +335,9 @@ be global."
   (provide 'init-autocorrect)
   ;;; autocorrect.el ends here
 #+END_SRC
+
+* Footnotes
+
+[fn:1] I found this out here
+
+http://superuser.com/questions/419017/flyspell-save-word-to-dictionary

@@ -79,7 +79,7 @@
   (find-file-noselect (concat "~/programming/emacs/autocorrect/tests/" reg-test/buffer))
   (with-current-buffer reg-test/buffer
     (goto-char (reg-test/go-to-before reg-test/buffer))
-    (buffer-substring (point) (progn
+    (buffer-substring-no-properties (point) (progn
                                 (search-forward-regexp "$")
                                 (point)))))
 
@@ -89,7 +89,7 @@
   (find-file-noselect (concat "~/programming/emacs/autocorrect/tests/" reg-test/buffer))
   (with-current-buffer reg-test/buffer
     (goto-char (reg-test/go-to-after reg-test/buffer))
-    (buffer-substring (point) (progn
+    (buffer-substring-no-properties (point) (progn
                                 (search-forward-regexp "$")
                                 (point)))))
 
@@ -100,7 +100,7 @@
   ;; I am now at the end of a word
   (when (equal line (line-number-at-pos))
     (insert " ")
-    (autocorrect-flyspell-auto-correct-word)
+    (autocorrect-flyspell-autocorrect-word)
     (reg-test/correct-all-words-on-current-line line reg-test/buffer)))
 
 (defun reg-test/autocorrect-words-are-correct (reg-test/buffer)
@@ -120,5 +120,5 @@
     (should (let (stringEqual)
               (setq stringEqual
                     (string= (reg-test/get-before reg-test/buffer) (reg-test/get-after reg-test/buffer)))
-              (kill-buffer reg-test/buffer)
+              ;;(kill-buffer reg-test/buffer)
               stringEqual))))

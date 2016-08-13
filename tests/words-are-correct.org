@@ -6,6 +6,6 @@ Also my/flyspell-auto-correct-word changes "before " into "before ", but it chan
 
 Also it might be ok to use whitespace mode, to see what is happening here.
 * before
-** beautiful     amazing spectacular spirited wonderful
+** beatuiful amzaing specatcular spirtied wonderflu 
 * after
-** beautiful  amazing  spectacular  spirited  wonderful
+** beautiful amazing spectacular spirited wonderful  

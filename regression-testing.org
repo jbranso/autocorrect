@@ -134,7 +134,7 @@ This should get the before line number.
     (find-file-noselect (concat "~/programming/emacs/autocorrect/tests/" reg-test/buffer))
     (with-current-buffer reg-test/buffer
       (goto-char (reg-test/go-to-before reg-test/buffer))
-      (buffer-substring (point) (progn
+      (buffer-substring-no-properties (point) (progn
                                   (search-forward-regexp "$")
                                   (point)))))
 
@@ -144,7 +144,7 @@ This should get the before line number.
     (find-file-noselect (concat "~/programming/emacs/autocorrect/tests/" reg-test/buffer))
     (with-current-buffer reg-test/buffer
       (goto-char (reg-test/go-to-after reg-test/buffer))
-      (buffer-substring (point) (progn
+      (buffer-substring-no-properties (point) (progn
                                   (search-forward-regexp "$")
                                   (point)))))
 
@@ -166,7 +166,7 @@ This should get me the after string.
     ;; I am now at the end of a word
     (when (equal line (line-number-at-pos))
       (insert " ")
-      (autocorrect-flyspell-auto-correct-word)
+      (autocorrect-flyspell-autocorrect-word)
       (reg-test/correct-all-words-on-current-line line reg-test/buffer)))
   #+END_SRC
 
@@ -200,9 +200,9 @@ This should get me the after string.
              (should (let (stringEqual)
                        (setq stringEqual
                              (string= (reg-test/get-before reg-test/buffer) (reg-test/get-after reg-test/buffer)))
-                       (kill-buffer reg-test/buffer)
+                       ;;(kill-buffer reg-test/buffer)
                        stringEqual))))
-#+END_SRC
+      #+END_SRC
 * looking for bugs
 
 (defun add-my-flyspell-auto-correct-word-hook ()
